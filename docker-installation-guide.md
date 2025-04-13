@@ -182,6 +182,10 @@ After verifying the NVIDIA runtime, rebuild and run the application:
    ```bash
    docker-compose build
    ```
+    **or**:
+   ```bash
+   docker-compose up --build
+   ```
 
 2. **Start the services**:
    ```bash
