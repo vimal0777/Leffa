@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  leffa:
+    image: leffa-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./ckpts:/app/ckpts
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
