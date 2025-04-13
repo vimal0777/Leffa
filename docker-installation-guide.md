@@ -1,5 +1,108 @@
 ### **Steps**
 
+Paths in the `Dockerfile` to match the project structure and ensure proper functionality. We need to ensure that:
+1. The `Dockerfile` references the correct paths for downloading checkpoints, mounting volumes, and running the application.
+2. The paths align with the structure of the Leffa project.
+
+Below is the updated `Dockerfile` with corrected paths:
+
+---
+
+### **Dockerfile**
+
+```Dockerfile
+# Base image with CUDA support
+FROM nvidia/cuda:12.2.0-base-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    wget \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext6 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python 3.10
+RUN apt-get update && apt-get install -y python3.10 python3-pip python3.10-dev
+
+# Create a symbolic link for "python" to point to "python3"
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Upgrade pip
+RUN python3.10 -m pip install --upgrade pip
+
+# Copy the project files into the container
+WORKDIR /app
+COPY . /app
+
+# Install Python dependencies
+RUN pip install -r requirements.txt
+
+# Download checkpoints (optional: can be skipped if checkpoints are pre-downloaded)
+RUN python app.py
+
+# Expose the port for the Gradio interface
+EXPOSE 7860
+
+# Command to run the application
+CMD ["python", "app.py"]
+```
+
+---
+
+### **Key Path Updates**
+1. **Project Directory**:
+   - The `WORKDIR` is set to `/app`, which is the root directory inside the container where the project files are copied.
+   - All paths in the `app.py` script (e.g., `./ckpts`) are relative to this directory.
+
+2. **Checkpoint Directory**:
+   - The `snapshot_download` function in `app.py` downloads checkpoints to the `./ckpts` directory. This path remains unchanged as it is already relative to the project root (`/app`).
+
+3. **Volume Mounting**:
+   - When running the container, you should mount the local project directory (e.g., `/root/Leffa`) to `/app` inside the container. This ensures that checkpoints and other files are accessible.
+
+---
+
+### **Running the Container**
+To run the container with the updated paths, use the following command:
+
+```bash
+docker run --gpus all -p 7860:7860 -v /root/Leffa:/app leffa-app
+```
+
+#### **Explanation of Flags**:
+- `--gpus all`: Grants the container access to all GPUs.
+- `-p 7860:7860`: Maps port `7860` on the host to port `7860` in the container (used by the Gradio interface).
+- `-v /root/Leffa:/app`: Mounts the local project directory (`/root/Leffa`) to `/app` inside the container.
+
+---
+
+### **Optional Enhancements**
+1. **Pre-download Checkpoints**:
+   If you want to avoid downloading checkpoints every time the container starts, download them manually and include them in the `./ckpts` directory. Update the `Dockerfile` to skip the checkpoint download step:
+
+   ```Dockerfile
+   # Comment out or remove the following line:
+   # RUN python app.py
+   ```
+
+### **Verification**
+After building and running the container:
+1. Verify that the checkpoints are downloaded to `/app/ckpts` (or mounted correctly if pre-downloaded).
+2. Access the Gradio interface at `http://localhost:7860` to ensure the application runs as expected.
+
+
+
 #### **1. Verify NVIDIA Driver Installation**
 Ensure that the NVIDIA drivers are installed and functioning correctly. Run the following command to check:
 
